@@ -1,4 +1,3 @@
-# filepath: /go-git-tui/README.md
 # Go Git TUI
 
 This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using fuzzy selection. It consists of two main commands: `gadd` for staging files and `gcommit` for committing changes.
@@ -62,6 +61,30 @@ To commit staged changes using the `gcommit` command, run:
 go run cmd/gcommit/main.go
 ```
 You will be prompted to enter a commit type and message.
+
+### Makefile Utilities
+
+The Makefile provides several utilities to streamline development and usage:
+
+- **Build**: Compile the project binaries.
+    ```shell
+    make build
+    ```
+
+- **Clean**: Remove compiled binaries and other generated files.
+    ```shell
+    make clean
+    ```
+
+- **Run**: Execute the main application.
+    ```shell
+    make run
+    ```
+
+- **Test**: Run the test suite.
+    ```shell
+    make test
+    ```
 
 ## Contributing
 
