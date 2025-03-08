@@ -5,12 +5,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Style for the UI components
-var (
-	primaryStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	secondaryStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-)
-
 // KeyMap defines the key bindings for the UI
 type KeyMap struct {
 	Select key.Binding

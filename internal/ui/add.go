@@ -11,13 +11,6 @@ import (
 	"go-git-tui/internal/git"
 )
 
-var (
-	// Styles for the UI components
-	titleStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
-	selectedStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	unselectedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
-)
-
 // FileItem represents a git status file item
 type FileItem struct {
 	status     string
