@@ -7,6 +7,11 @@ This project provides a terminal user interface for Git operations, specifically
 - **Fuzzy File Selection**: Quickly stage files using fuzzy matching.
 - **Interactive Commit Messages**: Easily specify commit types and messages through prompts.
 
+### Project Plan
+
+- **TODO:** Refer to `gadd.sh` in `scripts/`, the tui should display the `git diff`.
+- **TODO:** A clearer ui to display that you have selected an option in `gcommit`
+
 ## Project Structure
 
 ```
