@@ -8,10 +8,10 @@ build:
 clean:
 	rm -rf bin/*
 
-run-gadd:
+gadd:
 	./bin/gadd
 
-run-gcommit:
+gcommit:
 	./bin/gcommit
 
 test:
