@@ -2,15 +2,15 @@
 
 This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using fuzzy selection. It consists of two main commands: `gadd` for staging files and `gcommit` for committing changes.
 
-## Features
+## Roadmap
+**Features:**
 
 - **Fuzzy File Selection**: Quickly stage files using fuzzy matching.
 - **Interactive Commit Messages**: Easily specify commit types and messages through prompts.
 
-### Project Plan
-
-- **TODO:** Refer to `gadd.sh` in `scripts/`, the tui should display the `git diff`.
-- **TODO:** A clearer ui to display that you have selected an option in `gcommit`
+**TODOs:** 
+- [ ] Refer to `gadd.sh` in `scripts/`, the tui should display the `git diff`.
+- [ ] A clearer ui to display that you have selected an option in `gcommit`
 
 ## Project Structure
 
@@ -36,9 +36,11 @@ go-git-tui
 
 ## Installation
 
+### Option 1:
+
 1. Clone the repository:
     ```shell
-    git clone https://github.com/AnDoLeLongANZ/go-git-tui.git
+    git clone https://github.com/LaansDole/go-git-tui.git
     cd go-git-tui
     ```
 
@@ -48,6 +50,13 @@ go-git-tui
     ```shell
     go mod tidy
     ```
+
+### Option 2:
+To install the commands globally on your system:
+```go
+go install github.com/LaansDole/go-git-tui/cmd/gadd@latest
+go install github.com/LaansDole/go-git-tui/cmd/gcommit@latest
+```
 
 ## Usage
 
