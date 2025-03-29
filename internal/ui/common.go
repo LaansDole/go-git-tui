@@ -11,7 +11,6 @@ type KeyMap struct {
 	Cancel key.Binding
 }
 
-// NewKeyMap initializes the key bindings
 func NewKeyMap() KeyMap {
 	return KeyMap{
 		Select: key.NewBinding(
@@ -25,7 +24,6 @@ func NewKeyMap() KeyMap {
 	}
 }
 
-// RenderText renders styled text
 func RenderText(text string, style lipgloss.Style) string {
 	return style.Render(text)
 }

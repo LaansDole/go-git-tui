@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -24,25 +25,28 @@ func (i FileItem) Title() string {
 	if i.isSelected {
 		prefix = "✓ "
 	}
-	return prefix + i.path
+
+	// Color code different statuses
+	statusStyle := lipgloss.NewStyle()
+	switch i.status {
+	case "M ":
+		statusStyle = statusStyle.Foreground(lipgloss.Color("3")) // Yellow for modified
+	case "A ":
+		statusStyle = statusStyle.Foreground(lipgloss.Color("2")) // Green for added
+	case "D ":
+		statusStyle = statusStyle.Foreground(lipgloss.Color("1")) // Red for deleted
+	case "??":
+		statusStyle = statusStyle.Foreground(lipgloss.Color("4")) // Blue for untracked
+	}
+
+	// Format the status in brackets next to the file path
+	statusFormatted := statusStyle.Render(fmt.Sprintf("[%s]", i.status))
+	return prefix + statusFormatted + " " + i.path
 }
 
 func (i FileItem) Description() string {
-	statusMap := map[string]string{
-		"M ": "Modified",
-		"A ": "Added",
-		"D ": "Deleted",
-		"R ": "Renamed",
-		"C ": "Copied",
-		"U ": "Updated",
-		"??": "Untracked",
-	}
-
-	desc, ok := statusMap[i.status]
-	if !ok {
-		desc = i.status
-	}
-	return desc
+	// Return empty description since we're now showing status in the title
+	return ""
 }
 
 func (i FileItem) FilterValue() string { return i.path }
@@ -58,20 +62,45 @@ func initialAddModel() AddModel {
 	items := []list.Item{}
 
 	// Get git status using internal/git package
-	files, err := git.GetStatus()
+	gitService, err := git.NewGitService()
+	// Only proceed to get status if service is initialized successfully
 	if err == nil {
-		for _, file := range files {
-			items = append(items, FileItem{
-				status:     file.Status,
-				path:       file.Path,
-				isSelected: false,
-			})
+		files, err := gitService.Status()
+		if err == nil {
+			for _, file := range files {
+				items = append(items, FileItem{
+					status:     file.Status,
+					path:       file.Path,
+					isSelected: false,
+				})
+			}
 		}
 	}
+	// If there was an error with git service or status, we continue with empty items list
 
+	// Create a custom delegate with more compact spacing
 	delegate := list.NewDefaultDelegate()
-	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Foreground(lipgloss.Color("170"))
-	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Foreground(lipgloss.Color("240"))
+
+	// Customize the delegate styles for more compact display
+	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+		Foreground(lipgloss.Color("170")).
+		Margin(0, 0)
+
+	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
+		Foreground(lipgloss.Color("240")).
+		Margin(0, 0)
+
+	// Reduce padding and margins for all items
+	delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
+		Padding(0, 0).
+		Margin(0, 0)
+
+	delegate.Styles.NormalDesc = delegate.Styles.NormalDesc.
+		Padding(0, 0).
+		Margin(0, 0)
+
+	// Set spacing between items to 0
+	delegate.SetSpacing(0)
 
 	l := list.New(items, delegate, 0, 0)
 	l.Title = "Git Files"
@@ -126,6 +155,12 @@ func (m AddModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.list.SetItems(items)
 			}
+
+			// Move to the next item if not at the end of the list
+			if idx < len(m.list.Items())-1 {
+				m.list.Select(idx + 1)
+			}
+
 			return m, nil
 
 		case "enter":
