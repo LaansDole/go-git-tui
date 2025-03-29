@@ -7,10 +7,18 @@ This project provides a terminal user interface for Git operations, specifically
 
 - **Fuzzy File Selection**: Quickly stage files using fuzzy matching.
 - **Interactive Commit Messages**: Easily specify commit types and messages through prompts.
+- **Go-Git Integration**: Using native Go Git library instead of shell commands.
+- **Cobra CLI Framework**: Structured command-line interface with Cobra.
+- **Enhanced TUI Guide**: Improved in-application guidance for users.
+- **Test Coverage**: Comprehensive unit and integration tests.
 
 **TODOs:** 
 - [ ] Refer to `gadd.sh` in `scripts/`, the tui should display the `git diff`.
-- [ ] A clearer ui to display that you have selected an option in `gcommit`
+- [ ] A clearer ui to display that you have selected an option in `gcommit`.
+- [ ] Replace pure git commands with go-git dependency.
+- [x] Implement Cobra integration for CLI, combined with Bubbles/Charm TUI.
+- [ ] Add better guidance in the TUI.
+- [ ] Implement comprehensive unit tests.
 
 ## Project Structure
 
