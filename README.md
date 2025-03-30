@@ -2,20 +2,6 @@
 
 This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using interactive selection. It includes three main commands: `go-git-tui` (the main application), `gadd` for staging files, and `gcommit` for committing changes.
 
-## Features
-
-- **Interactive File Selection**: Quickly stage files with visual selection interface
-- **Commit Type Selection**: Choose from predefined commit types (feat, fix, docs, chores)
-- **Customizable Commit Messages**: Enter detailed commit messages with type prefixes
-- **Repository Status Display**: View repository status with colored file indicators
-- **Go-Git Integration**: Primary implementation using native Go Git library
-- **Shell Command Fallback**: Automatic fallback to Git CLI when needed
-- **Cobra CLI Framework**: Structured command-line interface
-- **Terminal UI**: Rich terminal interface using Bubble Tea, Bubbles, and Lipgloss
-- **Version Information**: Check application version with different output formats
-- **Shell Completion**: Built-in support for bash/zsh/fish completion
-- **Documentation Generation**: Auto-generated markdown documentation for all commands
-
 ## Roadmap
 
 **TODOs:** 
@@ -29,41 +15,6 @@ This project provides a terminal user interface for Git operations, specifically
 - [ ] A clearer UI to display that you have selected an option in `gcommit`
 - [ ] Add better guidance in the TUI
 - [ ] Implement more comprehensive unit tests
-
-## Project Structure
-
-```
-go-git-tui
-├── cmd/                      # Command entry points
-│   ├── gadd/
-│   │   └── main.go          # Entry for standalone gadd command  
-│   ├── gcommit/
-│   │   └── main.go          # Entry for standalone gcommit command
-│   ├── root.go              # Main CLI command definitions
-│   └── root_test.go         # Tests for root commands
-├── internal/
-│   ├── ui/
-│   │   ├── common.go        # Common UI functions and styles
-│   │   ├── add.go           # UI logic for gadd command
-│   │   ├── add_test.go      # Tests for add UI
-│   │   ├── commit.go        # UI logic for gcommit command
-│   │   └── common_test.go   # Tests for common UI components
-│   └── git/
-│       ├── commands.go      # Git shell command operations
-│       ├── commands_test.go # Tests for git commands
-│       ├── gogit.go         # Go-git library implementation
-│       └── service.go       # Git service interface
-├── scripts/                  # Original shell script implementations
-│   ├── gadd.sh              # Original bash script for gadd
-│   └── gcommit.sh           # Original bash script for gcommit
-├── .build/                   # Build output directory
-├── bin/                      # Executable wrappers
-├── go.mod                    # Go module configuration
-├── go.sum                    # Module dependency checksums
-├── Makefile                  # Build automation
-├── main.go                   # Main entry point for go-git-tui
-└── README.md                 # Project documentation
-```
 
 ## Installation
 
@@ -82,22 +33,7 @@ go-git-tui
     make build
     ```
 
-4. Add the bin directory to your PATH or use the executables directly:
-    ```shell
-    export PATH=$PATH:$PWD/bin
-    ```
-
-### Option 2: Global Installation
-
-Run the following command to install globally:
-
-```shell
-make install
-```
-
-This will install `go-git-tui`, `gadd`, and `gcommit` to your $GOPATH/bin directory.
-
-### Option 3: Using Go Install
+### Option 2: Using Go Install
 
 If you have Go installed, you can directly install the package using:
 
@@ -142,13 +78,6 @@ go-git-tui completion bash > ~/.bash_completion.d/go-git-tui
 
 # Check version information
 go-git-tui version
-
-# Check version in short format
-go-git-tui version --format=short
-
-# Check version in JSON format
-go-git-tui version --format=json
-```
 
 ### As Standalone Commands
 
