@@ -89,8 +89,14 @@ func (m CommitModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil // Don't proceed with empty message
 				}
 				m.step = 2
-				// Create the commit
-				err := git.Commit(m.selectedType, m.commitMessage)
+
+				gitService, err := git.NewGitService()
+				if err != nil {
+					m.err = err
+					return m, tea.Quit
+				}
+
+				err = gitService.Commit(m.selectedType, m.commitMessage)
 				if err != nil {
 					m.err = err
 					return m, tea.Quit

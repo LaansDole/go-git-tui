@@ -178,8 +178,12 @@ func (m AddModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 
-			// Stage files using git package
-			err := git.StageFiles(selectedPaths)
+			gitService, err := git.NewGitService()
+			if err != nil {
+				return m, tea.Quit
+			}
+
+			err = gitService.Stage(selectedPaths)
 			if err != nil {
 				return m, tea.Quit
 			}
