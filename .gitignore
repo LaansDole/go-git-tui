@@ -1,2 +1,6 @@
 .build/
 bin/
+
+# windsurf rules
+.windsurfrules
+go-git-tui
