@@ -2,10 +2,17 @@
 # Go-Git-TUI Makefile
 .PHONY: build clean lint fmt run gadd gcommit test test-coverage install-tools check-tools install
 
+# Build variables
+GO=go
+GIT_VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
+BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS=-ldflags "-X 'go-git-tui/cmd.Version=$(GIT_VERSION)' -X 'go-git-tui/cmd.Commit=$(GIT_COMMIT)' -X 'go-git-tui/cmd.BuildDate=$(BUILD_DATE)'"
+
 build:
 	@mkdir -p bin
 	@mkdir -p .build
-	go build -o .build/git-tui .
+	$(GO) build $(LDFLAGS) -o .build/git-tui .
 	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/../.build/git-tui\" \"\$$@\"" > bin/git-tui
 	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/git-tui\" add \"\$$@\"" > bin/gadd
 	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/git-tui\" commit \"\$$@\"" > bin/gcommit
@@ -79,3 +86,20 @@ install: build
 	@echo "#!/bin/bash\nexec git-tui commit \"\$$@\"" > $(GOPATH)/bin/gcommit
 	@chmod +x $(GOPATH)/bin/git-tui $(GOPATH)/bin/gadd $(GOPATH)/bin/gcommit
 	@echo "Installation complete. The commands git-tui, gadd, and gcommit are now available."
+
+# Release build with proper version information
+release:
+	@echo "Building release version $(GIT_VERSION)"
+	@mkdir -p releases
+	$(GO) build $(LDFLAGS) -o releases/git-tui .
+	@echo "Release binary built: releases/git-tui"
+
+# Generate docs
+docs:
+	@mkdir -p docs
+	@if [ -f ".build/git-tui" ]; then \
+		.build/git-tui generate-docs docs; \
+	else \
+		$(MAKE) build; \
+		.build/git-tui generate-docs docs; \
+	fi

@@ -8,17 +8,31 @@ import (
 	"go-git-tui/internal/ui"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
+)
+
+// Version information - these will be overridden during build
+var (
+	// Version is the application version from the git tag
+	Version = "dev"
+	// Commit is the git commit hash
+	Commit = "none"
+	// BuildDate is the date the binary was built
+	BuildDate = "unknown"
 )
 
 var (
 	// Global flags
 	verbose bool
-	
+	// Output format for version command
+	versionFormat string
+
 	// Commands
 	rootCmd = &cobra.Command{
-		Use:   "git-tui",
-		Short: "A Git TUI application",
-		Long:  `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
+		Use:     "git-tui",
+		Short:   "A Git TUI application",
+		Long:    `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
+		Version: Version,
 		Run: func(cmd *cobra.Command, args []string) {
 			// Default behavior when no subcommand is specified
 			if err := cmd.Help(); err != nil {
@@ -75,13 +89,13 @@ User Manual:
 				fmt.Fprintf(os.Stderr, "Error initializing git service: %v\n", err)
 				os.Exit(1)
 			}
-			
+
 			files, err := gitService.Status()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error getting status: %v\n", err)
 				os.Exit(1)
 			}
-			
+
 			fmt.Println("Git Repository Status:")
 			if len(files) == 0 {
 				fmt.Println("Working directory clean")
@@ -102,12 +116,63 @@ func Execute() {
 	}
 }
 
+// Version command to display version information
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version information",
+	Long:  `Display detailed version information about the git-tui application.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		switch versionFormat {
+		case "json":
+			fmt.Printf(`{"version":"%s","commit":"%s","buildDate":"%s"}`+"\n", Version, Commit, BuildDate)
+		case "short":
+			fmt.Printf("git-tui v%s\n", Version)
+		default: // full
+			fmt.Printf("git-tui v%s (commit: %s, built: %s)\n", Version, Commit, BuildDate)
+		}
+	},
+}
+
+// Generate documentation for the CLI commands
+var docsCmd = &cobra.Command{
+	Use:    "generate-docs",
+	Hidden: true,
+	Short:  "Generate markdown documentation",
+	Long:   `Generate markdown documentation for all git-tui commands.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		outDir := "./docs/"
+		if len(args) > 0 {
+			outDir = args[0]
+		}
+
+		if err := os.MkdirAll(outDir, 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating docs directory: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := doc.GenMarkdownTree(rootCmd, outDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating docs: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Documentation generated in %s\n", outDir)
+	},
+}
+
 func init() {
 	// Global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
-	
+
+	// Version command flags
+	versionCmd.Flags().StringVarP(&versionFormat, "format", "f", "full", "Output format (full, short, json)")
+
 	// Add subcommands
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(commitCmd)
 	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(docsCmd)
+
+	// Enable bash completion
+	rootCmd.CompletionOptions.DisableDefaultCmd = false
 }
