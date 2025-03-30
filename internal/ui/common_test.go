@@ -47,10 +47,7 @@ func TestRenderText(t *testing.T) {
 			// Get result from our function
 			result := RenderText(tc.text, tc.style)
 
-			// Log results for debugging
-			t.Logf("Input text: %q", tc.text)
-			t.Logf("Direct style result: %q", directResult)
-			t.Logf("RenderText result: %q", result)
+			// Debug logging removed to keep test output clean
 
 			// Check if results match direct rendering
 			if result != directResult {
