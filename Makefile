@@ -7,29 +7,29 @@ GO=go
 GIT_VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS=-ldflags "-X 'go-git-tui/cmd.Version=$(GIT_VERSION)' -X 'go-git-tui/cmd.Commit=$(GIT_COMMIT)' -X 'go-git-tui/cmd.BuildDate=$(BUILD_DATE)'"
+LDFLAGS=-ldflags "-X 'github.com/LaansDole/go-git-tui/cmd.Version=$(GIT_VERSION)' -X 'github.com/LaansDole/go-git-tui/cmd.Commit=$(GIT_COMMIT)' -X 'github.com/LaansDole/go-git-tui/cmd.BuildDate=$(BUILD_DATE)'"
 
 build:
 	@mkdir -p bin
 	@mkdir -p .build
-	$(GO) build $(LDFLAGS) -o .build/git-tui .
-	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/../.build/git-tui\" \"\$$@\"" > bin/git-tui
-	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/git-tui\" add \"\$$@\"" > bin/gadd
-	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/git-tui\" commit \"\$$@\"" > bin/gcommit
-	@chmod +x bin/git-tui bin/gadd bin/gcommit
+	$(GO) build $(LDFLAGS) -o .build/ggui .
+	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/../.build/ggui\" \"\$$@\"" > bin/ggui
+	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/ggui\" add \"\$$@\"" > bin/gadd
+	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/ggui\" commit \"\$$@\"" > bin/gcommit
+	@chmod +x bin/ggui bin/gadd bin/gcommit
 
 clean:
 	rm -rf bin/* .build/*
 	rm -rf coverage.out
 
 run:
-	./bin/git-tui
+	./bin/ggui
 
 gadd:
-	./bin/git-tui add
+	./bin/ggui add
 
 gcommit:
-	./bin/git-tui commit
+	./bin/ggui commit
 
 test:
 	go test ./... -v
@@ -79,27 +79,27 @@ generate-mocks:
 
 # Install the application globally
 install: build
-	@echo "Installing git-tui to $(GOPATH)/bin"
+	@echo "Installing ggui to $(GOPATH)/bin"
 	@mkdir -p $(GOPATH)/bin
-	@cp .build/git-tui $(GOPATH)/bin/
-	@echo "#!/bin/bash\nexec git-tui add \"\$$@\"" > $(GOPATH)/bin/gadd
-	@echo "#!/bin/bash\nexec git-tui commit \"\$$@\"" > $(GOPATH)/bin/gcommit
-	@chmod +x $(GOPATH)/bin/git-tui $(GOPATH)/bin/gadd $(GOPATH)/bin/gcommit
-	@echo "Installation complete. The commands git-tui, gadd, and gcommit are now available."
+	@cp .build/ggui $(GOPATH)/bin/
+	@echo "#!/bin/bash\nexec ggui add \"\$$@\"" > $(GOPATH)/bin/gadd
+	@echo "#!/bin/bash\nexec ggui commit \"\$$@\"" > $(GOPATH)/bin/gcommit
+	@chmod +x $(GOPATH)/bin/ggui $(GOPATH)/bin/gadd $(GOPATH)/bin/gcommit
+	@echo "Installation complete. The commands ggui, gadd, and gcommit are now available."
 
 # Release build with proper version information
 release:
 	@echo "Building release version $(GIT_VERSION)"
 	@mkdir -p releases
-	$(GO) build $(LDFLAGS) -o releases/git-tui .
-	@echo "Release binary built: releases/git-tui"
+	$(GO) build $(LDFLAGS) -o releases/ggui .
+	@echo "Release binary built: releases/ggui"
 
 # Generate docs
 docs:
 	@mkdir -p docs
-	@if [ -f ".build/git-tui" ]; then \
-		.build/git-tui generate-docs docs; \
+	@if [ -f ".build/ggui" ]; then \
+		.build/ggui generate-docs docs; \
 	else \
 		$(MAKE) build; \
-		.build/git-tui generate-docs docs; \
+		.build/ggui generate-docs docs; \
 	fi

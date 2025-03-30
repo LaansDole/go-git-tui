@@ -29,7 +29,7 @@ var (
 
 	// Commands
 	rootCmd = &cobra.Command{
-		Use:     "git-tui",
+		Use:     "ggui",
 		Short:   "A Git TUI application",
 		Long:    `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
 		Version: Version,
@@ -120,15 +120,15 @@ func Execute() {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
-	Long:  `Display detailed version information about the git-tui application.`,
+	Long:  `Display detailed version information about the ggui application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch versionFormat {
 		case "json":
 			fmt.Printf(`{"version":"%s","commit":"%s","buildDate":"%s"}`+"\n", Version, Commit, BuildDate)
 		case "short":
-			fmt.Printf("git-tui v%s\n", Version)
+			fmt.Printf("ggui v%s\n", Version)
 		default: // full
-			fmt.Printf("git-tui v%s (commit: %s, built: %s)\n", Version, Commit, BuildDate)
+			fmt.Printf("ggui v%s (commit: %s, built: %s)\n", Version, Commit, BuildDate)
 		}
 	},
 }
@@ -138,7 +138,7 @@ var docsCmd = &cobra.Command{
 	Use:    "generate-docs",
 	Hidden: true,
 	Short:  "Generate markdown documentation",
-	Long:   `Generate markdown documentation for all git-tui commands.`,
+	Long:   `Generate markdown documentation for all ggui commands.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		outDir := "./docs/"
 		if len(args) > 0 {

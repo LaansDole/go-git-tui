@@ -1,6 +1,6 @@
 # Go Git TUI
 
-This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using interactive selection. It includes three main commands: `git-tui` (the main application), `gadd` for staging files, and `gcommit` for committing changes.
+This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using interactive selection. It includes three main commands: `ggui` (the main application), `gadd` for staging files, and `gcommit` for committing changes.
 
 ## Features
 
@@ -95,7 +95,7 @@ Run the following command to install globally:
 make install
 ```
 
-This will install `git-tui`, `gadd`, and `gcommit` to your $GOPATH/bin directory.
+This will install `ggui`, `gadd`, and `gcommit` to your $GOPATH/bin directory.
 
 ### Option 3: Using Go Install
 
@@ -105,14 +105,14 @@ If you have Go installed, you can directly install the package using:
 go install github.com/LaansDole/go-git-tui@latest
 ```
 
-This will compile and install the `git-tui` binary to your $GOPATH/bin directory (or $HOME/go/bin if GOPATH is not set). 
+This will compile and install the `ggui` binary to your $GOPATH/bin directory (or $HOME/go/bin if GOPATH is not set). 
 
 To install the standalone commands:
 
 ```shell
 # Create symlinks or wrappers for gadd and gcommit
-echo -e '#!/bin/bash\nexec git-tui add "$@"' > $HOME/go/bin/gadd
-echo -e '#!/bin/bash\nexec git-tui commit "$@"' > $HOME/go/bin/gcommit
+echo -e '#!/bin/bash\nexec ggui add "$@"' > $HOME/go/bin/gadd
+echo -e '#!/bin/bash\nexec ggui commit "$@"' > $HOME/go/bin/gcommit
 chmod +x $HOME/go/bin/gadd $HOME/go/bin/gcommit
 ```
 
@@ -122,32 +122,32 @@ Make sure $GOPATH/bin (or $HOME/go/bin) is in your PATH.
 
 ### As a Combined Tool
 
-Use the main `git-tui` command with subcommands:
+Use the main `ggui` command with subcommands:
 
 ```shell
 # Show status
-git-tui status
+ggui status
 
 # Interactive staging
-git-tui add
+ggui add
 
 # Interactive commit
-git-tui commit
+ggui commit
 
 # Generate documentation
-git-tui generate-docs
+ggui generate-docs
 
 # Generate shell completion script
-git-tui completion bash > ~/.bash_completion.d/git-tui
+ggui completion bash > ~/.bash_completion.d/ggui
 
 # Check version information
-git-tui version
+ggui version
 
 # Check version in short format
-git-tui version --format=short
+ggui version --format=short
 
 # Check version in JSON format
-git-tui version --format=json
+ggui version --format=json
 ```
 
 ### As Standalone Commands
