@@ -10,28 +10,19 @@ import (
 	"github.com/spf13/cobra/doc"
 )
 
-// Version information - these will be overridden during build
-var (
-	// Version is the application version from the git tag
-	Version = "dev"
-	// Commit is the git commit hash
-	Commit = "none"
-	// BuildDate is the date the binary was built
-	BuildDate = "unknown"
-)
+// Version number hardcoded for simplicity
+const Version = "v1.0.4"
 
 var (
 	// Global flags
 	verbose bool
-	// Output format for version command
-	versionFormat string
 
 	// Commands
 	rootCmd = &cobra.Command{
-		Use:     "go-git-tui",
-		Short:   "A Git TUI application",
-		Long:    `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
-		Version: Version,
+		Use:   "go-git-tui",
+		Short: "A Git TUI application",
+		Long:  `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
+		// Don't set Version here to avoid the auto-generated --version flag
 		Run: func(cmd *cobra.Command, args []string) {
 			// Default behavior when no subcommand is specified
 			if err := cmd.Help(); err != nil {
@@ -90,16 +81,9 @@ func Execute() {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
-	Long:  `Display detailed version information about the go-git-tui application.`,
+	Long:  `Display the version of the go-git-tui application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		switch versionFormat {
-		case "json":
-			fmt.Printf(`{"version":"%s","commit":"%s","buildDate":"%s"}`+"\n", Version, Commit, BuildDate)
-		case "short":
-			fmt.Printf("go-git-tui v%s\n", Version)
-		default: // full
-			fmt.Printf("go-git-tui v%s (commit: %s, built: %s)\n", Version, Commit, BuildDate)
-		}
+		fmt.Printf("go-git-tui %s\n", Version)
 	},
 }
 
@@ -132,9 +116,6 @@ var docsCmd = &cobra.Command{
 func init() {
 	// Global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
-
-	// Version command flags
-	versionCmd.Flags().StringVarP(&versionFormat, "format", "f", "full", "Output format (full, short, json)")
 
 	// Add subcommands
 	rootCmd.AddCommand(addCmd)

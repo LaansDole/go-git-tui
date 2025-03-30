@@ -4,15 +4,11 @@
 
 # Build variables
 GO=go
-GIT_VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-GIT_COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
-BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-LDFLAGS=-ldflags "-X 'github.com/LaansDole/go-git-tui/cmd.Version=$(GIT_VERSION)' -X 'github.com/LaansDole/go-git-tui/cmd.Commit=$(GIT_COMMIT)' -X 'github.com/LaansDole/go-git-tui/cmd.BuildDate=$(BUILD_DATE)'"
 
 build:
 	@mkdir -p bin
 	@mkdir -p .build
-	$(GO) build $(LDFLAGS) -o .build/go-git-tui .
+	$(GO) build -o .build/go-git-tui .
 	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/../.build/go-git-tui\" \"\$$@\"" > bin/go-git-tui
 	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/go-git-tui\" add \"\$$@\"" > bin/gadd
 	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/go-git-tui\" commit \"\$$@\"" > bin/gcommit
@@ -87,11 +83,11 @@ install: build
 	@chmod +x $(GOPATH)/bin/go-git-tui $(GOPATH)/bin/gadd $(GOPATH)/bin/gcommit
 	@echo "Installation complete. The commands go-git-tui, gadd, and gcommit are now available."
 
-# Release build with proper version information
+# Build a release version
 release:
-	@echo "Building release version $(GIT_VERSION)"
+	@echo "Building release version"
 	@mkdir -p releases
-	$(GO) build $(LDFLAGS) -o releases/go-git-tui .
+	$(GO) build -o releases/go-git-tui .
 	@echo "Release binary built: releases/go-git-tui"
 
 # Generate docs
