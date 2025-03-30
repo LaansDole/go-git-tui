@@ -1,6 +1,6 @@
 # Go Git TUI
 
-This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using interactive selection. It includes three main commands: `ggui` (the main application), `gadd` for staging files, and `gcommit` for committing changes.
+This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using interactive selection. It includes three main commands: `go-git-tui` (the main application), `gadd` for staging files, and `gcommit` for committing changes.
 
 ## Features
 
@@ -61,7 +61,7 @@ go-git-tui
 ├── go.mod                    # Go module configuration
 ├── go.sum                    # Module dependency checksums
 ├── Makefile                  # Build automation
-├── main.go                   # Main entry point for git-tui
+├── main.go                   # Main entry point for go-git-tui
 └── README.md                 # Project documentation
 ```
 
@@ -95,7 +95,7 @@ Run the following command to install globally:
 make install
 ```
 
-This will install `ggui`, `gadd`, and `gcommit` to your $GOPATH/bin directory.
+This will install `go-git-tui`, `gadd`, and `gcommit` to your $GOPATH/bin directory.
 
 ### Option 3: Using Go Install
 
@@ -105,14 +105,14 @@ If you have Go installed, you can directly install the package using:
 go install github.com/LaansDole/go-git-tui@latest
 ```
 
-This will compile and install the `ggui` binary to your $GOPATH/bin directory (or $HOME/go/bin if GOPATH is not set). 
+This will compile and install the `go-git-tui` binary to your $GOPATH/bin directory (or $HOME/go/bin if GOPATH is not set). 
 
 To install the standalone commands:
 
 ```shell
 # Create symlinks or wrappers for gadd and gcommit
-echo -e '#!/bin/bash\nexec ggui add "$@"' > $HOME/go/bin/gadd
-echo -e '#!/bin/bash\nexec ggui commit "$@"' > $HOME/go/bin/gcommit
+echo -e '#!/bin/bash\nexec go-git-tui add "$@"' > $HOME/go/bin/gadd
+echo -e '#!/bin/bash\nexec go-git-tui commit "$@"' > $HOME/go/bin/gcommit
 chmod +x $HOME/go/bin/gadd $HOME/go/bin/gcommit
 ```
 
@@ -122,32 +122,32 @@ Make sure $GOPATH/bin (or $HOME/go/bin) is in your PATH.
 
 ### As a Combined Tool
 
-Use the main `ggui` command with subcommands:
+Use the main `go-git-tui` command with subcommands:
 
 ```shell
 # Show status
-ggui status
+go-git-tui status
 
 # Interactive staging
-ggui add
+go-git-tui add
 
 # Interactive commit
-ggui commit
+go-git-tui commit
 
 # Generate documentation
-ggui generate-docs
+go-git-tui generate-docs
 
 # Generate shell completion script
-ggui completion bash > ~/.bash_completion.d/ggui
+go-git-tui completion bash > ~/.bash_completion.d/go-git-tui
 
 # Check version information
-ggui version
+go-git-tui version
 
 # Check version in short format
-ggui version --format=short
+go-git-tui version --format=short
 
 # Check version in JSON format
-ggui version --format=json
+go-git-tui version --format=json
 ```
 
 ### As Standalone Commands

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/LaansDole/go-git-tui/internal/git"
 	"github.com/LaansDole/go-git-tui/internal/ui"
 
 	"github.com/spf13/cobra"
@@ -29,7 +28,7 @@ var (
 
 	// Commands
 	rootCmd = &cobra.Command{
-		Use:     "ggui",
+		Use:     "go-git-tui",
 		Short:   "A Git TUI application",
 		Long:    `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
 		Version: Version,
@@ -77,35 +76,6 @@ User Manual:
 			}
 		},
 	}
-
-	// Status command to display repository status
-	statusCmd = &cobra.Command{
-		Use:   "status",
-		Short: "Show repository status",
-		Long:  `Display the current status of the Git repository using go-git.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			gitService, err := git.NewGitService()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error initializing git service: %v\n", err)
-				os.Exit(1)
-			}
-
-			files, err := gitService.Status()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error getting status: %v\n", err)
-				os.Exit(1)
-			}
-
-			fmt.Println("Git Repository Status:")
-			if len(files) == 0 {
-				fmt.Println("Working directory clean")
-			} else {
-				for _, file := range files {
-					fmt.Printf("%s %s\n", file.Status, file.Path)
-				}
-			}
-		},
-	}
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -120,15 +90,15 @@ func Execute() {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
-	Long:  `Display detailed version information about the ggui application.`,
+	Long:  `Display detailed version information about the go-git-tui application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch versionFormat {
 		case "json":
 			fmt.Printf(`{"version":"%s","commit":"%s","buildDate":"%s"}`+"\n", Version, Commit, BuildDate)
 		case "short":
-			fmt.Printf("ggui v%s\n", Version)
+			fmt.Printf("go-git-tui v%s\n", Version)
 		default: // full
-			fmt.Printf("ggui v%s (commit: %s, built: %s)\n", Version, Commit, BuildDate)
+			fmt.Printf("go-git-tui v%s (commit: %s, built: %s)\n", Version, Commit, BuildDate)
 		}
 	},
 }
@@ -138,7 +108,7 @@ var docsCmd = &cobra.Command{
 	Use:    "generate-docs",
 	Hidden: true,
 	Short:  "Generate markdown documentation",
-	Long:   `Generate markdown documentation for all ggui commands.`,
+	Long:   `Generate markdown documentation for all go-git-tui commands.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		outDir := "./docs/"
 		if len(args) > 0 {
@@ -169,7 +139,6 @@ func init() {
 	// Add subcommands
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(commitCmd)
-	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(docsCmd)
 

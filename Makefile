@@ -12,24 +12,24 @@ LDFLAGS=-ldflags "-X 'github.com/LaansDole/go-git-tui/cmd.Version=$(GIT_VERSION)
 build:
 	@mkdir -p bin
 	@mkdir -p .build
-	$(GO) build $(LDFLAGS) -o .build/ggui .
-	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/../.build/ggui\" \"\$$@\"" > bin/ggui
-	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/ggui\" add \"\$$@\"" > bin/gadd
-	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/ggui\" commit \"\$$@\"" > bin/gcommit
-	@chmod +x bin/ggui bin/gadd bin/gcommit
+	$(GO) build $(LDFLAGS) -o .build/go-git-tui .
+	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/../.build/go-git-tui\" \"\$$@\"" > bin/go-git-tui
+	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/go-git-tui\" add \"\$$@\"" > bin/gadd
+	@echo "#!/bin/bash\nexec \"\$$(dirname \"\$$0\")/go-git-tui\" commit \"\$$@\"" > bin/gcommit
+	@chmod +x bin/go-git-tui bin/gadd bin/gcommit
 
 clean:
 	rm -rf bin/* .build/*
 	rm -rf coverage.out
 
 run:
-	./bin/ggui
+	./bin/go-git-tui
 
 gadd:
-	./bin/ggui add
+	./bin/go-git-tui add
 
 gcommit:
-	./bin/ggui commit
+	./bin/go-git-tui commit
 
 test:
 	go test ./... -v
@@ -79,27 +79,27 @@ generate-mocks:
 
 # Install the application globally
 install: build
-	@echo "Installing ggui to $(GOPATH)/bin"
+	@echo "Installing go-git-tui to $(GOPATH)/bin"
 	@mkdir -p $(GOPATH)/bin
-	@cp .build/ggui $(GOPATH)/bin/
-	@echo "#!/bin/bash\nexec ggui add \"\$$@\"" > $(GOPATH)/bin/gadd
-	@echo "#!/bin/bash\nexec ggui commit \"\$$@\"" > $(GOPATH)/bin/gcommit
-	@chmod +x $(GOPATH)/bin/ggui $(GOPATH)/bin/gadd $(GOPATH)/bin/gcommit
-	@echo "Installation complete. The commands ggui, gadd, and gcommit are now available."
+	@cp .build/go-git-tui $(GOPATH)/bin/
+	@echo "#!/bin/bash\nexec go-git-tui add \"\$$@\"" > $(GOPATH)/bin/gadd
+	@echo "#!/bin/bash\nexec go-git-tui commit \"\$$@\"" > $(GOPATH)/bin/gcommit
+	@chmod +x $(GOPATH)/bin/go-git-tui $(GOPATH)/bin/gadd $(GOPATH)/bin/gcommit
+	@echo "Installation complete. The commands go-git-tui, gadd, and gcommit are now available."
 
 # Release build with proper version information
 release:
 	@echo "Building release version $(GIT_VERSION)"
 	@mkdir -p releases
-	$(GO) build $(LDFLAGS) -o releases/ggui .
-	@echo "Release binary built: releases/ggui"
+	$(GO) build $(LDFLAGS) -o releases/go-git-tui .
+	@echo "Release binary built: releases/go-git-tui"
 
 # Generate docs
 docs:
 	@mkdir -p docs
-	@if [ -f ".build/ggui" ]; then \
-		.build/ggui generate-docs docs; \
+	@if [ -f ".build/go-git-tui" ]; then \
+		.build/go-git-tui generate-docs docs; \
 	else \
 		$(MAKE) build; \
-		.build/ggui generate-docs docs; \
+		.build/go-git-tui generate-docs docs; \
 	fi
