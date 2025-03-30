@@ -11,7 +11,7 @@ import (
 )
 
 // Version number hardcoded for simplicity
-const Version = "v1.0.5-stable"
+const Version = "v1.0.6"
 
 var (
 	// Global flags

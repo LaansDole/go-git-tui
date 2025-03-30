@@ -1,6 +1,6 @@
 # Go Git TUI
 
-This project provides a terminal user interface for Git operations, specifically focusing on staging files and committing changes using interactive selection. It includes three main commands: `go-git-tui` (the main application), `gadd` for staging files, and `gcommit` for committing changes.
+This project provides a terminal user interface for Git operations, specifically focusing on staging files, git diff and committing changes using interactive selection.
 
 ## Roadmap
 
@@ -11,10 +11,10 @@ This project provides a terminal user interface for Git operations, specifically
 - [x] Add version command with multiple output formats
 - [x] Add documentation generation and shell completion
 - [x] Implement automatic version from Git tags
-- [ ] Refer to `gadd.sh` in `scripts/`, the tui should display the `git diff`
+- [x] Refer to `gadd.sh` in `scripts/`, the tui should display the `git diff`
 - [ ] A clearer UI to display that you have selected an option in `gcommit`
 - [ ] Add better guidance in the TUI
-- [ ] Implement more comprehensive unit tests
+- [x] Implement more comprehensive unit tests
 
 ## Installation
 
@@ -89,21 +89,6 @@ gadd
 gcommit
 ```
 
-### TUI Usage Guide
-
-#### gadd (Interactive Staging)
-- Use **↑/↓ arrow keys** to navigate through files
-- Press **Tab** to select/deselect files for staging
-- Press **Enter** to confirm and stage selected files
-- Press **q** to quit without staging
-
-#### gcommit (Interactive Commit)
-- Use **↑/↓ arrow keys** to select commit type
-- Press **Enter** to confirm type selection
-- Type your commit message
-- Press **Enter** to create the commit
-- Press **Ctrl+C** to cancel at any time
-
 ### Makefile Utilities
 
 The Makefile provides several utilities to streamline development and usage:
@@ -132,6 +117,7 @@ The Makefile provides several utilities to streamline development and usage:
 - **Test**: Run the test suite
     ```shell
     make test
+    make test-coverage
     ```
 
 - **Quick Check**: Run formatting and linting
