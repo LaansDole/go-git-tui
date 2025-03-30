@@ -97,6 +97,27 @@ make install
 
 This will install `git-tui`, `gadd`, and `gcommit` to your $GOPATH/bin directory.
 
+### Option 3: Using Go Install
+
+If you have Go installed, you can directly install the package using:
+
+```shell
+go install github.com/LaansDole/go-git-tui@latest
+```
+
+This will compile and install the `git-tui` binary to your $GOPATH/bin directory (or $HOME/go/bin if GOPATH is not set). 
+
+To install the standalone commands:
+
+```shell
+# Create symlinks or wrappers for gadd and gcommit
+echo -e '#!/bin/bash\nexec git-tui add "$@"' > $HOME/go/bin/gadd
+echo -e '#!/bin/bash\nexec git-tui commit "$@"' > $HOME/go/bin/gcommit
+chmod +x $HOME/go/bin/gadd $HOME/go/bin/gcommit
+```
+
+Make sure $GOPATH/bin (or $HOME/go/bin) is in your PATH.
+
 ## Usage
 
 ### As a Combined Tool

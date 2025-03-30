@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"go-git-tui/internal/git"
+	"github.com/LaansDole/go-git-tui/internal/git"
 )
 
 // CommitTypeItem represents a commit type option

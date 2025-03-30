@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"go-git-tui/internal/ui"
+	"github.com/LaansDole/go-git-tui/internal/ui"
 
 	"github.com/spf13/cobra"
 )

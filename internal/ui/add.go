@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"go-git-tui/internal/git"
+	"github.com/LaansDole/go-git-tui/internal/git"
 )
 
 // FileItem represents a git status file item

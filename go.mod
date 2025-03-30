@@ -1,4 +1,4 @@
-module go-git-tui
+module github.com/LaansDole/go-git-tui
 
 go 1.24
 
