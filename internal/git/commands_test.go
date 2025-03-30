@@ -155,7 +155,7 @@ func TestStageFiles(t *testing.T) {
 				// For nonexistent file test, we can assume it will fail but implementation details may vary
 				// Test fallback implementation
 				err1 := StageFiles(tc.paths)
-				
+
 				// Test go-git implementation
 				repo, err := NewGitRepository(repoPath)
 				if err != nil {
