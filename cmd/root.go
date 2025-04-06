@@ -4,25 +4,21 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/LaansDole/go-git-tui/internal/ui"
+	"github.com/LaansDole/go-git-tui/internal/ui/add"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
 
-// Version number hardcoded for simplicity
-const Version = "v1.0.6"
+const version = "v1.0.6"
 
 var (
-	// Global flags
 	verbose bool
 
-	// Commands
 	rootCmd = &cobra.Command{
 		Use:   "go-git-tui",
 		Short: "A Git TUI application",
 		Long:  `A terminal user interface for Git operations built with go-git and Cobra CLI.`,
-		// Don't set Version here to avoid the auto-generated --version flag
 		Run: func(cmd *cobra.Command, args []string) {
 			// Default behavior when no subcommand is specified
 			if err := cmd.Help(); err != nil {
@@ -32,7 +28,6 @@ var (
 		},
 	}
 
-	// Add command for staging files interactively
 	addCmd = &cobra.Command{
 		Use:   "add",
 		Short: "Stage files interactively",
@@ -43,14 +38,13 @@ User Manual:
   - TAB to select files
   - ENTER once you have done selecting the files you want to add`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ui.RunAddUI(); err != nil {
+			if err := add.Run(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
 		},
 	}
 
-	// Commit command for creating commits interactively
 	commitCmd = &cobra.Command{
 		Use:   "commit",
 		Short: "Create commits interactively",
@@ -61,15 +55,14 @@ User Manual:
   - Use ARROW KEYS (UP/DOWN) to navigate options
   - ENTER to confirm selections`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ui.RunCommitUI(); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				os.Exit(1)
-			}
+			// Directly return a not-yet-implemented error without going through the UI package
+			// This avoids the need to load non-existent files
+			fmt.Fprintf(os.Stderr, "Error: commit UI not yet implemented\n")
+			os.Exit(1)
 		},
 	}
 )
 
-// Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -77,17 +70,15 @@ func Execute() {
 	}
 }
 
-// Version command to display version information
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version information",
 	Long:  `Display the version of the go-git-tui application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("go-git-tui %s\n", Version)
+		fmt.Printf("go-git-tui %s\n", version)
 	},
 }
 
-// Generate documentation for the CLI commands
 var docsCmd = &cobra.Command{
 	Use:    "generate-docs",
 	Hidden: true,

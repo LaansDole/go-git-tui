@@ -20,14 +20,13 @@ User Manual:
   - TAB to select files
   - ENTER once you have done selecting the files you want to add`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ui.RunAddUI(); err != nil {
+			if err := ui.StartAddTUI(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
 		},
 	}
 
-	// Execute adds all child commands to the root command and sets flags appropriately.
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

@@ -21,14 +21,13 @@ User Manual:
   - Use ARROW KEYS (UP/DOWN) to navigate options
   - ENTER to confirm selections`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := ui.RunCommitUI(); err != nil {
+			if err := ui.StartCommitTUI(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
 		},
 	}
 
-	// Execute adds all child commands to the root command and sets flags appropriately.
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
