@@ -10,7 +10,7 @@ import (
 // View renders the UI - implements tea.Model interface
 func (m *Model) View() string {
 	if m.Quitting {
-		return ""
+		return m.Message
 	}
 
 	if !m.Ready {

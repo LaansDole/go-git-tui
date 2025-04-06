@@ -88,7 +88,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Display error message and quit
 		return m, tea.Sequence(
 			tea.Printf("Error: %v", msg.error),
-			tea.Quit,
+			func() tea.Msg { return tea.Quit },
 		)
 
 	case tea.KeyMsg:
@@ -264,17 +264,18 @@ func (m *Model) handleTick() (tea.Model, tea.Cmd) {
 
 // handleStagingComplete handles when staging is complete
 func (m *Model) handleStagingComplete(msg StagingCompleteMsg) (tea.Model, tea.Cmd) {
-	// Set message for the UI
-	m.Message = fmt.Sprintf("Staged %d files", len(msg.Files))
+	m.Quitting = true
+
+	m.Message = fmt.Sprintf("%d files staged", len(msg.Files))
 	m.MessageTimeout = 10
 
-	// Create a list of staged files for output
 	filesOutput := strings.Join(msg.Files, "\n")
-	
-	// Use tea.Sequence to chain commands: first print, then quit
+	finalOutput := fmt.Sprintf("\nThe following files have been staged:\n%s\n", filesOutput)
+
 	return m, tea.Sequence(
-		tea.Printf("\nThe following files have been staged:\n%s\n", filesOutput),
-		tea.Quit,
+		func() tea.Msg { return tea.ExitAltScreen() },
+		tea.Printf("%s", finalOutput),
+		func() tea.Msg { return tea.Quit },
 	)
 }
 
@@ -312,7 +313,10 @@ func (m *Model) handleSelectionToggle(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // handleNavigationKeys handles navigation keys for both viewports
 func (m *Model) handleNavigationKeys(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Limit the maximum number of commands we'll send at once
+	// to prevent overflowing the event queue
 	var cmds []tea.Cmd
+	const maxCommands = 3
 
 	if m.Quitting {
 		return m, nil
@@ -370,18 +374,28 @@ func (m *Model) handleNavigationKeys(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Generate unique request ID for this navigation request
 						requestID := time.Now().UnixNano()
 
-						// Start a debounced diff loading with unique ID
-						cmds = append(cmds, tea.Tick(m.navDebounceTime, func(t time.Time) tea.Msg {
-							// Only load the diff if no other navigation has happened since this timer started
-							if time.Since(m.lastNavTime) >= m.navDebounceTime && !m.Quitting {
-								m.isNavigating = false
-								return DelayedDiffMsg{
-									FilePath:  item.Path,
-									RequestID: requestID,
+						if len(cmds) < maxCommands {
+							// Start a debounced diff loading with unique ID
+							cmds = append(cmds, tea.Tick(m.navDebounceTime, func(t time.Time) tea.Msg {
+								// Safety check for synchronized state access
+								m.diffMutex.Lock()
+								navigatingSince := time.Since(m.lastNavTime)
+								quitting := m.Quitting
+								m.diffMutex.Unlock()
+
+								// Only load the diff if no other navigation has happened since this timer started
+								if navigatingSince >= m.navDebounceTime && !quitting {
+									m.diffMutex.Lock()
+									m.isNavigating = false
+									m.diffMutex.Unlock()
+									return DelayedDiffMsg{
+										FilePath:  item.Path,
+										RequestID: requestID,
+									}
 								}
-							}
-							return nil
-						}))
+								return nil
+							}))
+						}
 					}
 				}
 			}
@@ -397,15 +411,18 @@ func (m *Model) handleNavigationKeys(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	// Tick for message timeout
-	if m.MessageTimeout > 0 {
+	// Tick for message timeout - only if we have room for more commands
+	if m.MessageTimeout > 0 && len(cmds) < maxCommands {
 		cmds = append(cmds, tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg {
 			return TickMsg{}
 		}))
 	}
 
-	if len(cmds) > 0 {
+	// Use Batch for multiple commands or just return the single command
+	if len(cmds) > 1 {
 		return m, tea.Batch(cmds...)
+	} else if len(cmds) == 1 {
+		return m, cmds[0]
 	}
 	return m, nil
 }
@@ -413,41 +430,51 @@ func (m *Model) handleNavigationKeys(msg tea.Msg) (tea.Model, tea.Cmd) {
 // ShowDiff loads and displays the diff for the selected file
 func (m *Model) ShowDiff(filePath string) tea.Cmd {
 	return func() tea.Msg {
-		// Multiple safety checks to avoid race conditions
-		if m.Quitting {
+		// Make a local copy of needed data to avoid race conditions
+		m.diffMutex.Lock()
+		if m.Quitting || m.GitService == nil || m.isNavigating || filePath != m.CurrentFile {
 			m.LoadingDiff = false
+			m.diffMutex.Unlock()
 			return nil
 		}
 
-		if m.GitService == nil {
-			m.LoadingDiff = false
+		// Rate limiting to avoid excessive git operations
+		elapsed := time.Since(m.lastDiffTime)
+		if elapsed < m.minDiffDelay {
+			// Instead of sleeping which blocks the thread, just skip this update
+			// if it's too soon after the last one
+			m.diffMutex.Unlock()
 			return nil
 		}
+		m.lastDiffTime = time.Now()
+		m.diffMutex.Unlock()
 
-		// Use mutex to ensure exclusive access to diff operations
+		// Perform git operation outside of the lock to avoid blocking
+		var diff *git.DiffResult
+		var err error
+
+		// Safely call git service with recovery for potential panics
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("panic in GetFileDiff: %v", r)
+				}
+			}()
+			diff, err = m.GitService.GetFileDiff(filePath)
+		}()
+
+		// Reacquire lock to check state before returning
 		m.diffMutex.Lock()
 		defer m.diffMutex.Unlock()
 
-		// Check if we're still navigating before proceeding
-		if m.isNavigating {
+		// Final check if state changed while doing git operation
+		if m.Quitting || filePath != m.CurrentFile {
 			m.LoadingDiff = false
 			return nil
 		}
 
-		if filePath != m.CurrentFile {
-			m.LoadingDiff = false
-			return nil
-		}
-
-		elapsed := time.Since(m.lastDiffTime)
-		if elapsed < m.minDiffDelay {
-			time.Sleep(m.minDiffDelay - elapsed)
-		}
-
-		m.lastDiffTime = time.Now()
-
-		diff, err := m.GitService.GetFileDiff(filePath)
 		if err != nil {
+			m.LoadingDiff = false
 			return ErrMsg{err}
 		}
 
