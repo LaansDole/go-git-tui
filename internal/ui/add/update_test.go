@@ -41,126 +41,147 @@ func (m *MockGitService) Commit(commitType, message string) error {
 }
 
 func TestModelUpdate(t *testing.T) {
-	// Test window size message handling
-	t.Run("window size update", func(t *testing.T) {
-		// Create a properly initialized list
-		delegate := list.NewDefaultDelegate()
-		l := list.New([]list.Item{}, delegate, 80, 40)
+	tests := []struct {
+		name    string
+		paths   []string
+		wantErr bool
+		setup   func() (*Model, tea.Msg)
+		check   func(t *testing.T, model tea.Model, cmd tea.Cmd)
+	}{
+		{
+			name:  "window size update",
+			paths: []string{},
+			setup: func() (*Model, tea.Msg) {
+				delegate := list.NewDefaultDelegate()
+				l := list.New([]list.Item{}, delegate, 80, 40)
 
-		model := Model{
-			List:         l,
-			DiffViewport: viewport.New(80, 40),
-			StyleConfig:  NewStyleConfig(),
-		}
-		newModel, _ := model.Update(tea.WindowSizeMsg{Width: 100, Height: 50})
-		updatedModel, ok := newModel.(*Model)
-		assert.True(t, ok)
-		assert.Equal(t, 100, updatedModel.Width)
-		assert.Equal(t, 50, updatedModel.Height)
-		assert.True(t, updatedModel.Ready)
-	})
+				model := &Model{
+					List:         l,
+					DiffViewport: viewport.New(80, 40),
+					StyleConfig:  NewStyleConfig(),
+				}
+				return model, tea.WindowSizeMsg{Width: 100, Height: 50}
+			},
+			check: func(t *testing.T, model tea.Model, cmd tea.Cmd) {
+				updatedModel, ok := model.(*Model)
+				assert.True(t, ok)
+				assert.Equal(t, 100, updatedModel.Width)
+				assert.Equal(t, 50, updatedModel.Height)
+				assert.True(t, updatedModel.Ready)
+			},
+		},
+		{
+			name:  "diff loaded message",
+			paths: []string{},
+			setup: func() (*Model, tea.Msg) {
+				model := &Model{
+					DiffViewport: viewport.New(80, 40),
+					LoadingDiff:  true,
+					StyleConfig:  NewStyleConfig(),
+					Selected:     make(map[int]bool),
+				}
+				diff := &git.DiffResult{
+					Content: "test content",
+				}
+				return model, DiffLoadedMsg{Diff: diff}
+			},
+			check: func(t *testing.T, model tea.Model, cmd tea.Cmd) {
+				updatedModel, ok := model.(*Model)
+				assert.True(t, ok)
+				assert.NotNil(t, updatedModel.CurrentDiff)
+				assert.Equal(t, "test content", updatedModel.CurrentDiff.Content)
+				assert.False(t, updatedModel.LoadingDiff)
+			},
+		},
+		{
+			name:  "staging complete message",
+			paths: []string{"file1.go", "file2.go"},
+			setup: func() (*Model, tea.Msg) {
+				delegate := list.NewDefaultDelegate()
+				l := list.New([]list.Item{}, delegate, 80, 40)
 
-	// Test diff loaded message handling
-	t.Run("diff loaded message", func(t *testing.T) {
-		model := &Model{
-			DiffViewport: viewport.New(80, 40),
-			LoadingDiff:  true,
-			StyleConfig:  NewStyleConfig(),
-			Selected:     make(map[int]bool),
-		}
-		diff := &git.DiffResult{
-			Content: "test content",
-		}
-		newModel, _ := model.Update(DiffLoadedMsg{Diff: diff})
-		updatedModel, ok := newModel.(*Model)
-		assert.True(t, ok)
-		assert.Equal(t, diff, updatedModel.CurrentDiff)
-		assert.False(t, updatedModel.LoadingDiff)
-	})
+				model := &Model{
+					List:         l,
+					DiffViewport: viewport.New(80, 40),
+					StyleConfig:  NewStyleConfig(),
+				}
+				return model, StagingCompleteMsg{Files: []string{"file1.go", "file2.go"}}
+			},
+			check: func(t *testing.T, model tea.Model, cmd tea.Cmd) {
+				updatedModel, ok := model.(*Model)
+				assert.True(t, ok)
+				assert.Contains(t, updatedModel.Message, "Staged 2 files")
+				assert.NotNil(t, cmd)
+			},
+		},
+		{
+			name:  "selection toggle",
+			paths: []string{"file1.go", "file2.go"},
+			setup: func() (*Model, tea.Msg) {
+				fileItems := []list.Item{
+					FileItem{Path: "file1.go", Status: "M ", IsSelected: false},
+					FileItem{Path: "file2.go", Status: "A ", IsSelected: false},
+				}
+				delegate := list.NewDefaultDelegate()
+				l := list.New(fileItems, delegate, 80, 40)
 
-	// Test staging complete message handling
-	t.Run("staging complete message", func(t *testing.T) {
-		// Create a properly initialized list
-		delegate := list.NewDefaultDelegate()
-		l := list.New([]list.Item{}, delegate, 80, 40)
+				model := &Model{
+					List:        l,
+					Selected:    make(map[int]bool),
+					StyleConfig: NewStyleConfig(),
+				}
+				return model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}}
+			},
+			check: func(t *testing.T, model tea.Model, cmd tea.Cmd) {
+				updatedModel, ok := model.(*Model)
+				assert.True(t, ok)
+				assert.True(t, updatedModel.Selected[0], "First item should be selected")
+			},
+		},
+		{
+			name:  "w/s navigation updates diff view",
+			paths: []string{"file1.go", "file2.go"},
+			setup: func() (*Model, tea.Msg) {
+				fileItems := []list.Item{
+					FileItem{Path: "file1.go", Status: "M ", IsSelected: false},
+					FileItem{Path: "file2.go", Status: "A ", IsSelected: false},
+				}
+				delegate := list.NewDefaultDelegate()
+				l := list.New(fileItems, delegate, 80, 40)
 
-		model := Model{
-			List:         l,
-			DiffViewport: viewport.New(80, 40),
-			StyleConfig:  NewStyleConfig(),
-		}
-		files := []string{"file1.go", "file2.go"}
-		newModel, cmd := model.Update(StagingCompleteMsg{Files: files})
-		updatedModel, ok := newModel.(*Model)
-		assert.True(t, ok)
-		assert.Contains(t, updatedModel.Message, "Staged 2 files")
-		assert.NotNil(t, cmd)
-	})
+				model := &Model{
+					List:         l,
+					Selected:     make(map[int]bool),
+					StyleConfig:  NewStyleConfig(),
+					DiffViewport: viewport.New(80, 40),
+				}
+				return model, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}}
+			},
+			check: func(t *testing.T, model tea.Model, cmd tea.Cmd) {
+				updatedModel, ok := model.(*Model)
+				assert.True(t, ok)
+				assert.Equal(t, 1, updatedModel.List.Index(), "Should move to the second file")
+				assert.Equal(t, "file2.go", updatedModel.CurrentFile, "Current file should be updated")
+				assert.NotNil(t, cmd, "Should return a command to load the diff")
+				
+				// Test navigating back up
+				newModel, newCmd := updatedModel.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+				newUpdatedModel, ok := newModel.(*Model)
+				assert.True(t, ok)
+				assert.Equal(t, 0, newUpdatedModel.List.Index(), "Should move back to the first file")
+				assert.Equal(t, "file1.go", newUpdatedModel.CurrentFile, "Current file should be updated")
+				assert.NotNil(t, newCmd, "Should return a command to load the diff")
+			},
+		},
+	}
 
-	// Test selection key handling
-	t.Run("selection toggle", func(t *testing.T) {
-		fileItems := []list.Item{
-			FileItem{Path: "file1.go", Status: "M ", IsSelected: false},
-			FileItem{Path: "file2.go", Status: "A ", IsSelected: false},
-		}
-		delegate := list.NewDefaultDelegate()
-		l := list.New(fileItems, delegate, 80, 40)
-
-		model := &Model{
-			List:        l,
-			Selected:    make(map[int]bool),
-			StyleConfig: NewStyleConfig(),
-		}
-
-		// Toggle selection with space
-		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
-		updatedModel, ok := newModel.(*Model)
-		assert.True(t, ok)
-		assert.True(t, updatedModel.Selected[0], "First item should be selected")
-	})
-
-	// Test w/s navigation key handling to verify diff loading
-	t.Run("w/s navigation updates diff view", func(t *testing.T) {
-		// Create mock files for testing
-		fileItems := []list.Item{
-			FileItem{Path: "file1.go", Status: "M ", IsSelected: false},
-			FileItem{Path: "file2.go", Status: "A ", IsSelected: false},
-		}
-		delegate := list.NewDefaultDelegate()
-		l := list.New(fileItems, delegate, 80, 40)
-
-		// Create the model
-		model := &Model{
-			List:         l,
-			Selected:     make(map[int]bool),
-			StyleConfig:  NewStyleConfig(),
-			DiffViewport: viewport.New(80, 40),
-		}
-
-		// Navigate down with 's' key as specified in the requirements
-		newModel, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
-
-		// Verify the model was updated correctly
-		updatedModel, ok := newModel.(*Model)
-		assert.True(t, ok)
-		assert.Equal(t, 1, updatedModel.List.Index(), "Should move to the second file")
-		assert.Equal(t, "file2.go", updatedModel.CurrentFile, "Current file should be updated")
-
-		// Verify that a command is returned (to load the diff)
-		assert.NotNil(t, cmd, "Should return a command to load the diff")
-
-		// Navigate up with 'w' key back to the first file as specified in the requirements
-		newModel, cmd = updatedModel.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
-
-		// Verify the model was updated correctly
-		updatedModel, ok = newModel.(*Model)
-		assert.True(t, ok)
-		assert.Equal(t, 0, updatedModel.List.Index(), "Should move back to the first file")
-		assert.Equal(t, "file1.go", updatedModel.CurrentFile, "Current file should be updated")
-
-		// Verify that a command is returned (to load the diff)
-		assert.NotNil(t, cmd, "Should return a command to load the diff")
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model, msg := tt.setup()
+			newModel, cmd := model.Update(msg)
+			tt.check(t, newModel, cmd)
+		})
+	}
 }
 
 // TestShowDiff tests the ShowDiff method
@@ -168,96 +189,188 @@ func TestShowDiff(t *testing.T) {
 	// Skip this test for now as we need to revise how we mock the GitService
 	t.Skip("Need to revise how we mock the GitService interface")
 
-	mockGitService := new(MockGitService)
-	filePath := "test.go"
+	tests := []struct {
+		name    string
+		paths   []string
+		wantErr bool
+		setup   func() (*Model, *MockGitService, string)
+		check   func(t *testing.T, msg tea.Msg, mock *MockGitService)
+	}{
+		{
+			name:    "successful diff load",
+			paths:   []string{"test.go"},
+			wantErr: false,
+			setup: func() (*Model, *MockGitService, string) {
+				mockGitService := new(MockGitService)
+				filePath := "test.go"
 
-	expectedDiff := &git.DiffResult{
-		Content: "+added line\n-deleted line",
-		Stats: git.DiffStats{
-			Added:   1,
-			Deleted: 1,
+				expectedDiff := &git.DiffResult{
+					Content: "+added line\n-deleted line",
+					Stats: git.DiffStats{
+						Added:   1,
+						Deleted: 1,
+					},
+				}
+
+				mockGitService.On("GetFileDiff", filePath).Return(expectedDiff, nil)
+
+				// In a real implementation, we would properly inject the mockGitService
+				model := &Model{
+					GitService: nil, // This would be set to mockGitService in a real test
+				}
+
+				return model, mockGitService, filePath
+			},
+			check: func(t *testing.T, msg tea.Msg, mock *MockGitService) {
+				diffMsg, ok := msg.(DiffLoadedMsg)
+				assert.True(t, ok, "Should return DiffLoadedMsg")
+				assert.NotNil(t, diffMsg.Diff)
+				assert.Contains(t, diffMsg.Diff.Content, "+added line")
+				assert.Contains(t, diffMsg.Diff.Content, "-deleted line")
+				mock.AssertExpectations(t)
+			},
 		},
 	}
 
-	mockGitService.On("GetFileDiff", filePath).Return(expectedDiff, nil)
-
-	// In a real implementation, we would need to properly inject the mockGitService
-	// but for now we're just making sure the refactored code compiles
-	model := Model{
-		GitService: nil,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model, mockService, filePath := tt.setup()
+			cmd := model.ShowDiff(filePath)
+			msg := cmd()
+			tt.check(t, msg, mockService)
+		})
 	}
-
-	cmd := model.ShowDiff(filePath)
-	msg := cmd()
-
-	diffMsg, ok := msg.(DiffLoadedMsg)
-	assert.True(t, ok, "Should return DiffLoadedMsg")
-	assert.Equal(t, expectedDiff, diffMsg.Diff)
-
-	mockGitService.AssertExpectations(t)
 }
 
 // TestFormatDiffContent tests the FormatDiffContent method
 func TestFormatDiffContent(t *testing.T) {
-	model := Model{
-		DiffViewport: viewport.Model{Width: 80},
-		StyleConfig:  NewStyleConfig(),
+	tests := []struct {
+		name    string
+		paths   []string
+		wantErr bool
+		setup   func() (*Model, *git.DiffResult)
+		check   func(t *testing.T, result string)
+	}{
+		{
+			name:  "nil diff",
+			paths: []string{},
+			setup: func() (*Model, *git.DiffResult) {
+				model := &Model{
+					DiffViewport: viewport.Model{Width: 80},
+					StyleConfig:  NewStyleConfig(),
+				}
+				return model, nil
+			},
+			check: func(t *testing.T, result string) {
+				assert.Equal(t, "No diff available", result)
+			},
+		},
+		{
+			name:  "binary diff",
+			paths: []string{},
+			setup: func() (*Model, *git.DiffResult) {
+				model := &Model{
+					DiffViewport: viewport.Model{Width: 80},
+					StyleConfig:  NewStyleConfig(),
+				}
+				diff := &git.DiffResult{IsBinary: true}
+				return model, diff
+			},
+			check: func(t *testing.T, result string) {
+				assert.Equal(t, "Binary file differences not shown", result)
+			},
+		},
+		{
+			name:  "text diff",
+			paths: []string{},
+			setup: func() (*Model, *git.DiffResult) {
+				model := &Model{
+					DiffViewport: viewport.Model{Width: 80},
+					StyleConfig:  NewStyleConfig(),
+				}
+				diff := &git.DiffResult{
+					Content: "+added\n-removed\n normal",
+				}
+				return model, diff
+			},
+			check: func(t *testing.T, result string) {
+				assert.Contains(t, result, "added")
+				assert.Contains(t, result, "removed")
+				assert.Contains(t, result, "normal")
+			},
+		},
 	}
 
-	// Test nil diff
-	t.Run("nil diff", func(t *testing.T) {
-		result := model.FormatDiffContent(nil)
-		assert.Equal(t, "No diff available", result)
-	})
-
-	// Test binary diff
-	t.Run("binary diff", func(t *testing.T) {
-		diff := &git.DiffResult{IsBinary: true}
-		result := model.FormatDiffContent(diff)
-		assert.Equal(t, "Binary file differences not shown", result)
-	})
-
-	// Test text diff
-	t.Run("text diff", func(t *testing.T) {
-		diff := &git.DiffResult{
-			Content: "+added\n-removed\n normal",
-		}
-		result := model.FormatDiffContent(diff)
-		assert.Contains(t, result, "added")
-		assert.Contains(t, result, "removed")
-		assert.Contains(t, result, "normal")
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model, diff := tt.setup()
+			result := model.FormatDiffContent(diff)
+			tt.check(t, result)
+		})
+	}
 }
 
 // TestGetDiffStats tests the GetDiffStats method
 func TestGetDiffStats(t *testing.T) {
-	model := Model{}
-
-	// Test nil diff
-	t.Run("nil diff", func(t *testing.T) {
-		result := model.GetDiffStats(nil)
-		assert.Equal(t, "No changes", result)
-	})
-
-	// Test empty diff
-	t.Run("empty diff", func(t *testing.T) {
-		diff := &git.DiffResult{}
-		result := model.GetDiffStats(diff)
-		assert.Equal(t, "No changes", result)
-	})
-
-	// Test diff with stats
-	t.Run("diff with stats", func(t *testing.T) {
-		diff := &git.DiffResult{
-			Stats: git.DiffStats{
-				Added:   5,
-				Deleted: 3,
+	tests := []struct {
+		name    string
+		paths   []string
+		wantErr bool
+		setup   func() (*Model, *git.DiffResult)
+		check   func(t *testing.T, result string)
+	}{
+		{
+			name:  "nil diff",
+			paths: []string{},
+			setup: func() (*Model, *git.DiffResult) {
+				model := &Model{}
+				return model, nil
 			},
-		}
-		result := model.GetDiffStats(diff)
-		assert.Contains(t, result, "5 insertions")
-		assert.Contains(t, result, "3 deletions")
-	})
+			check: func(t *testing.T, result string) {
+				assert.Equal(t, "No changes", result)
+			},
+		},
+		{
+			name:  "no changes",
+			paths: []string{},
+			setup: func() (*Model, *git.DiffResult) {
+				model := &Model{}
+				diff := &git.DiffResult{
+					Stats: git.DiffStats{},
+				}
+				return model, diff
+			},
+			check: func(t *testing.T, result string) {
+				assert.Equal(t, "No changes", result)
+			},
+		},
+		{
+			name:  "with changes",
+			paths: []string{},
+			setup: func() (*Model, *git.DiffResult) {
+				model := &Model{}
+				diff := &git.DiffResult{
+					Stats: git.DiffStats{
+						Added:   5,
+						Deleted: 3,
+					},
+				}
+				return model, diff
+			},
+			check: func(t *testing.T, result string) {
+				assert.Contains(t, result, "5 insertions")
+				assert.Contains(t, result, "3 deletions")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model, diff := tt.setup()
+			result := model.GetDiffStats(diff)
+			tt.check(t, result)
+		})
+	}
 }
 
 // TestConfirmStaging tests the ConfirmStaging method using table-driven tests
