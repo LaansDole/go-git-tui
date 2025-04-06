@@ -52,10 +52,7 @@ func (i FileItem) Title() string {
 }
 
 // Description implements the list.Item interface
-func (i FileItem) Description() string {
-	// Return empty description since we're showing status in the title
-	return ""
-}
+func (i FileItem) Description() string { return "" }
 
 // FilterValue implements the list.Item interface
 func (i FileItem) FilterValue() string { return i.Path }
@@ -106,15 +103,13 @@ type Model struct {
 	StyleConfig StyleConfig
 
 	// Concurrency control
-	diffMutex        sync.Mutex
-	lastDiffTime     time.Time
-	minDiffDelay     time.Duration
-	lastNavTime      time.Time
-	navDebounceTime  time.Duration
-	isNavigating     bool
-	lastResizeTime   time.Time
-	resizeDebounce time.Duration
-	resizeInProgress bool
+	diffMutex       sync.Mutex
+	lastDiffTime    time.Time
+	minDiffDelay    time.Duration
+	lastNavTime     time.Time
+	navDebounceTime time.Duration
+	isNavigating    bool
+	lastResizeTime  time.Time
 }
 
 // New initializes a new instance of the add UI model
@@ -194,25 +189,22 @@ func New() *Model {
 	diffViewport.SetContent("Loading...")
 
 	return &Model{
-		List:             l,
-		Selected:         make(map[int]bool),
-		Quitting:         false,
-		DiffViewport:     diffViewport,
-		GitService:       gitService,
-		StyleConfig:      NewStyleConfig(),
-		LoadingDiff:      false,
-		lastDiffTime:     time.Now(),
-		lastNavTime:      time.Now(),
-		minDiffDelay:     500 * time.Millisecond, // Minimum time between diff loads
-		navDebounceTime:  500 * time.Millisecond, // Time to wait after navigation stops before loading diff
-		lastResizeTime:   time.Now(),
-		resizeDebounce: 500 * time.Millisecond, // Time to wait between resize events
-		resizeInProgress: false,
+		List:            l,
+		Selected:        make(map[int]bool),
+		Quitting:        false,
+		DiffViewport:    diffViewport,
+		GitService:      gitService,
+		StyleConfig:     NewStyleConfig(),
+		LoadingDiff:     false,
+		lastDiffTime:    time.Now(),
+		lastNavTime:     time.Now(),
+		minDiffDelay:    250 * time.Millisecond, // Minimum time between diff loads
+		navDebounceTime: 500 * time.Millisecond, // Time to wait after navigation stops before loading diff
+		lastResizeTime:  time.Now(),
 	}
 }
 
 // Init initializes the model - implements tea.Model interface
 func (m *Model) Init() tea.Cmd {
-	// Return the initial command to set up the UI
 	return nil
 }

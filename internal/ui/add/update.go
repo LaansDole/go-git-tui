@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -14,15 +13,15 @@ import (
 )
 
 // DelayedDiffMsg is sent after the navigation debounce period to trigger a diff load
-type DelayedDiffMsg struct{ 
-    FilePath string
-    RequestID int64 // Unique ID to track requests and avoid race conditions
+type DelayedDiffMsg struct {
+	FilePath  string
+	RequestID int64 // Unique ID to track requests and avoid race conditions
 }
 
-// DelayedResizeMsg is sent after the resize debounce period to finalize a resize operation
-type DelayedResizeMsg struct{ 
-    Width, Height int
-    RequestID int64 // Unique ID to track requests
+// DelayedResizeMsg is sent after the resize debounce period to handle a resize operation
+type DelayedResizeMsg struct {
+	Width, Height int
+	RequestID     int64 // Unique ID to track requests
 }
 
 // Update handles state changes based on messages - implements tea.Model interface
@@ -53,34 +52,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.Quitting {
 			return m, nil
 		}
-		
-		// Handle window resize with debouncing
-		currentTime := time.Now()
-		m.lastResizeTime = currentTime
-		
-		// Only set resize in progress if not already in progress
-		if !m.resizeInProgress {
-			m.resizeInProgress = true
-		}
 
-		// Update dimensions immediately but debounce the full resize operation
 		m.Width, m.Height = msg.Width, msg.Height
-		
-		// Generate unique ID for this resize request
-		requestID := time.Now().UnixNano()
-		
-		// Schedule a delayed resize operation
-		return m, tea.Tick(m.resizeDebounce, func(t time.Time) tea.Msg {
-			// Only proceed if this is the most recent resize request
-			if t.Sub(m.lastResizeTime) >= m.resizeDebounce {
-				return DelayedResizeMsg{
-					Width: msg.Width, 
-					Height: msg.Height,
-					RequestID: requestID,
-				}
-			}
-			return nil
-		})
+
+		return m.handleWindowResize(msg)
 
 	case DiffLoadedMsg:
 		// Handle diff loaded message
@@ -92,31 +67,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case DelayedDiffMsg:
 		// Only load the diff if we're not currently navigating and not quitting
-		// Also ensure we're not in the middle of a resize operation
-		if !m.isNavigating && !m.Quitting && !m.resizeInProgress && msg.FilePath == m.CurrentFile {
+		if !m.isNavigating && !m.Quitting && msg.FilePath == m.CurrentFile {
 			// Safely trigger the diff loading
 			m.LoadingDiff = true
 			return m, m.ShowDiff(msg.FilePath)
 		}
 		return m, nil
-		
+
 	case DelayedResizeMsg:
-		// Skip if we're quitting
 		if m.Quitting {
-			m.resizeInProgress = false
 			return m, nil
 		}
-		
-		// Process the resize only if not loading diff
-		if !m.LoadingDiff {
-			// Handle a delayed resize event after debouncing
-			defer func() { m.resizeInProgress = false }()
-			return m.handleWindowResize(tea.WindowSizeMsg{Width: msg.Width, Height: msg.Height})
-		}
-		
-		// If loading diff, mark resize as not in progress but don't process yet
-		m.resizeInProgress = false
-		return m, nil
+		return m.handleWindowResize(tea.WindowSizeMsg{Width: msg.Width, Height: msg.Height})
 
 	case StagingCompleteMsg:
 		// Handle staging complete message
@@ -132,13 +94,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle various keyboard commands
 		switch msg.String() {
-		// Explicit handling for exit keys
 		case "q", "ctrl+c", "esc":
-			// Quit the application
 			m.Quitting = true
 			return m, tea.Quit
 
-		// Explicit handling for selection keys
 		case "tab", " ":
 			// Toggle selection for the current file
 			return m.handleSelectionToggle(msg)
@@ -147,7 +106,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Confirm staging with Enter
 			return m, m.ConfirmStaging()
 
-		// Explicit handling for diff viewport navigation
 		case "j":
 			m.DiffViewport.LineDown(1)
 			return m, nil
@@ -187,7 +145,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.DiffViewport.GotoBottom()
 			return m, nil
 
-		// Explicit handling for left/right arrow keys to prevent unexpected exits
 		case "left", "right":
 			// Intentionally ignore these keys to prevent unexpected exits
 			return m, nil
@@ -210,7 +167,7 @@ func (m *Model) handleWindowResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	diffFrameH, diffFrameV := m.StyleConfig.DiffStyle.GetFrameSize()
 
 	// Calculate sizes with more compact layout
-	availableWidth := m.Width - appFrameH 
+	availableWidth := m.Width - appFrameH
 	availableHeight := m.Height - appFrameV - 3 // Reduced reservation for title, status, help
 
 	// Split width 40% for list, 60% for diff
@@ -226,48 +183,29 @@ func (m *Model) handleWindowResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	// Calculate new viewport dimensions
 	newViewportWidth := diffWidth - diffFrameH
 	newViewportHeight := availableHeight - diffFrameV - reservedVerticalSpace
-	
-	// Only fully recreate the viewport if dimensions have changed
+
+	// Only update the viewport if dimensions have changed
 	if m.DiffViewport.Width != newViewportWidth || m.DiffViewport.Height != newViewportHeight {
-		// Safe viewport recreation with multiple safety checks
-		if m.isNavigating || m.LoadingDiff {
-			// Delay viewport recreation if we're in the middle of another operation
-			// This prevents crashes from race conditions
-			return m, tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
-				return DelayedResizeMsg{
-					Width: m.Width,
-					Height: m.Height,
-					RequestID: time.Now().UnixNano(),
-				}
-			})
-		}
-		
-		// Save current state
+		// Save current content and position
 		currentYPosition := m.DiffViewport.YPosition
 		var content string
-		
+
 		// Get content to restore
 		if m.CurrentDiff != nil {
 			content = m.FormatDiffContent(m.CurrentDiff)
 		} else {
 			content = m.DiffViewport.View()
 		}
-		
-		// Completely recreate the viewport to avoid artifacts
-		m.DiffViewport = viewport.New(newViewportWidth, newViewportHeight)
-		m.DiffViewport.MouseWheelEnabled = false
+		m.DiffViewport.Width = newViewportWidth
+		m.DiffViewport.Height = newViewportHeight
 		m.DiffViewport.SetContent(content)
-		
+
 		// Restore scroll position if possible
 		if currentYPosition > 0 && content != "" {
 			m.DiffViewport.YPosition = currentYPosition
 			// Ensure we don't scroll beyond content
-			if m.DiffViewport.YPosition > m.DiffViewport.TotalLineCount() - m.DiffViewport.Height {
-				if m.DiffViewport.TotalLineCount() - m.DiffViewport.Height > 0 {
-					m.DiffViewport.YPosition = m.DiffViewport.TotalLineCount() - m.DiffViewport.Height
-				} else {
-					m.DiffViewport.YPosition = 0
-				}
+			if m.DiffViewport.YPosition > m.DiffViewport.TotalLineCount()-m.DiffViewport.Height {
+				m.DiffViewport.YPosition = max(m.DiffViewport.TotalLineCount()-m.DiffViewport.Height, 0)
 			}
 		}
 	}
@@ -278,7 +216,7 @@ func (m *Model) handleWindowResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 		MaxHeight(m.DiffViewport.Height).
 		Width(m.DiffViewport.Width).
 		MaxWidth(m.DiffViewport.Width)
-	
+
 	// Reset the divider style with the proper color and size
 	m.StyleConfig.DividerStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240")).
@@ -292,12 +230,7 @@ func (m *Model) handleWindowResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Return a command to perform another frame draw after a slight delay
-	// to ensure any artifacts are cleaned up
-	return m, tea.Tick(50*time.Millisecond, func(_ time.Time) tea.Msg {
-		// This causes a redraw without changing state
-		return nil
-	})
+	return m, nil
 }
 
 // handleDiffLoaded handles when a diff is loaded
@@ -331,11 +264,16 @@ func (m *Model) handleTick() (tea.Model, tea.Cmd) {
 
 // handleStagingComplete handles when staging is complete
 func (m *Model) handleStagingComplete(msg StagingCompleteMsg) (tea.Model, tea.Cmd) {
-	m.Message = fmt.Sprintf("%d files staged: %s", len(msg.Files), strings.Join(msg.Files, ", "))
-	m.MessageTimeout = 20
+	// Set message for the UI
+	m.Message = fmt.Sprintf("Staged %d files", len(msg.Files))
+	m.MessageTimeout = 10
 
+	// Create a list of staged files for output
+	filesOutput := strings.Join(msg.Files, "\n")
+	
+	// Use tea.Sequence to chain commands: first print, then quit
 	return m, tea.Sequence(
-		tea.Tick(1500*time.Millisecond, func(time.Time) tea.Msg { return TickMsg{} }),
+		tea.Printf("\nThe following files have been staged:\n%s\n", filesOutput),
 		tea.Quit,
 	)
 }
@@ -376,8 +314,7 @@ func (m *Model) handleSelectionToggle(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) handleNavigationKeys(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
-	// Safety checks - avoid processing if program is in certain states
-	if m.Quitting || m.resizeInProgress {
+	if m.Quitting {
 		return m, nil
 	}
 
@@ -436,10 +373,10 @@ func (m *Model) handleNavigationKeys(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Start a debounced diff loading with unique ID
 						cmds = append(cmds, tea.Tick(m.navDebounceTime, func(t time.Time) tea.Msg {
 							// Only load the diff if no other navigation has happened since this timer started
-							if time.Since(m.lastNavTime) >= m.navDebounceTime && !m.Quitting && !m.resizeInProgress {
+							if time.Since(m.lastNavTime) >= m.navDebounceTime && !m.Quitting {
 								m.isNavigating = false
 								return DelayedDiffMsg{
-									FilePath: item.Path,
+									FilePath:  item.Path,
 									RequestID: requestID,
 								}
 							}
@@ -491,8 +428,8 @@ func (m *Model) ShowDiff(filePath string) tea.Cmd {
 		m.diffMutex.Lock()
 		defer m.diffMutex.Unlock()
 
-		// Double-check all conditions that could cause conflicts before proceeding
-		if m.isNavigating || m.resizeInProgress {
+		// Check if we're still navigating before proceeding
+		if m.isNavigating {
 			m.LoadingDiff = false
 			return nil
 		}

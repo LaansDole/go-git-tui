@@ -93,7 +93,7 @@ func TestModelUpdate(t *testing.T) {
 		newModel, cmd := model.Update(StagingCompleteMsg{Files: files})
 		updatedModel, ok := newModel.(*Model)
 		assert.True(t, ok)
-		assert.Contains(t, updatedModel.Message, "2 files staged")
+		assert.Contains(t, updatedModel.Message, "Staged 2 files")
 		assert.NotNil(t, cmd)
 	})
 
@@ -260,66 +260,83 @@ func TestGetDiffStats(t *testing.T) {
 	})
 }
 
-// TestConfirmStaging tests the ConfirmStaging method
+// TestConfirmStaging tests the ConfirmStaging method using table-driven tests
 func TestConfirmStaging(t *testing.T) {
 	// Skip this test for now as we need to revise how we mock the GitService
 	t.Skip("Need to revise how we mock the GitService interface")
 
-	mockGitService := new(MockGitService)
+	tests := []struct {
+		name    string
+		paths   []string
+		wantErr bool
+		setup   func(model *Model, mockService *MockGitService)
+		check   func(t *testing.T, msg tea.Msg)
+	}{
+		{
+			name:    "with selected items",
+			paths:   []string{"file1.go", "file2.go"},
+			wantErr: false,
+			setup: func(model *Model, mockService *MockGitService) {
+				fileItems := []list.Item{
+					FileItem{Path: "file1.go", Status: "M ", IsSelected: true},
+					FileItem{Path: "file2.go", Status: "A ", IsSelected: true},
+				}
+				delegate := list.NewDefaultDelegate()
+				l := list.New(fileItems, delegate, 80, 40)
 
-	// Test with selected items
-	t.Run("with selected items", func(t *testing.T) {
-		fileItems := []list.Item{
-			FileItem{Path: "file1.go", Status: "M ", IsSelected: true},
-			FileItem{Path: "file2.go", Status: "A ", IsSelected: true},
-		}
-		delegate := list.NewDefaultDelegate()
-		l := list.New(fileItems, delegate, 80, 40)
+				mockService.On("Stage", []string{"file1.go", "file2.go"}).Return(nil)
 
-		selectedPaths := []string{"file1.go", "file2.go"}
-		mockGitService.On("Stage", selectedPaths).Return(nil)
+				model.List = l
+				model.Selected = map[int]bool{0: true, 1: true}
+				model.GitService = nil // This would be set to mockService in a real test
+			},
+			check: func(t *testing.T, msg tea.Msg) {
+				stagingMsg, ok := msg.(StagingCompleteMsg)
+				assert.True(t, ok, "Should return StagingCompleteMsg")
+				assert.Equal(t, []string{"file1.go", "file2.go"}, stagingMsg.Files)
+			},
+		},
+		{
+			name:    "with current file no selection",
+			paths:   []string{"file1.go"},
+			wantErr: false,
+			setup: func(model *Model, mockService *MockGitService) {
+				fileItems := []list.Item{
+					FileItem{Path: "file1.go", Status: "M ", IsSelected: false},
+				}
+				delegate := list.NewDefaultDelegate()
+				l := list.New(fileItems, delegate, 80, 40)
 
-		model := Model{
-			List:       l,
-			Selected:   map[int]bool{0: true, 1: true},
-			GitService: nil,
-		}
+				mockService.On("Stage", []string{"file1.go"}).Return(nil)
 
-		cmd := model.ConfirmStaging()
-		msg := cmd()
+				model.List = l
+				model.Selected = map[int]bool{}
+				model.CurrentFile = "file1.go"
+				model.GitService = nil // This would be set to mockService in a real test
+			},
+			check: func(t *testing.T, msg tea.Msg) {
+				stagingMsg, ok := msg.(StagingCompleteMsg)
+				assert.True(t, ok, "Should return StagingCompleteMsg")
+				assert.Equal(t, []string{"file1.go"}, stagingMsg.Files)
+			},
+		},
+	}
 
-		stagingMsg, ok := msg.(StagingCompleteMsg)
-		assert.True(t, ok, "Should return StagingCompleteMsg")
-		assert.Equal(t, selectedPaths, stagingMsg.Files)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockGitService := new(MockGitService)
+			model := &Model{}
 
-		mockGitService.AssertExpectations(t)
-	})
+			// Setup the test case
+			tt.setup(model, mockGitService)
 
-	// Test with current file but no selection
-	t.Run("with current file no selection", func(t *testing.T) {
-		fileItems := []list.Item{
-			FileItem{Path: "file1.go", Status: "M ", IsSelected: false},
-		}
-		delegate := list.NewDefaultDelegate()
-		l := list.New(fileItems, delegate, 80, 40)
+			// Run the function being tested
+			cmd := model.ConfirmStaging()
+			msg := cmd()
 
-		currentFilePath := "file1.go"
-		mockGitService.On("Stage", []string{currentFilePath}).Return(nil)
-
-		model := Model{
-			List:        l,
-			Selected:    map[int]bool{},
-			CurrentFile: currentFilePath,
-			GitService:  nil,
-		}
-
-		cmd := model.ConfirmStaging()
-		msg := cmd()
-
-		stagingMsg, ok := msg.(StagingCompleteMsg)
-		assert.True(t, ok, "Should return StagingCompleteMsg")
-		assert.Equal(t, []string{currentFilePath}, stagingMsg.Files)
-
-		mockGitService.AssertExpectations(t)
-	})
+			// Check the results
+			tt.check(t, msg)
+			mockGitService.AssertExpectations(t)
+		})
+	}
 }
