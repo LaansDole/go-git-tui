@@ -1,29 +1,19 @@
 package ui
 
 import (
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/LaansDole/go-git-tui/internal/ui/common"
 )
 
-// KeyMap defines the key bindings for the UI
-type KeyMap struct {
-	Select key.Binding
-	Cancel key.Binding
+func TruncateText(text string, maxLength int, ellipsis string) string {
+	return common.TruncateText(text, maxLength, ellipsis)
 }
 
-func NewKeyMap() KeyMap {
-	return KeyMap{
-		Select: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "select"),
-		),
-		Cancel: key.NewBinding(
-			key.WithKeys("ctrl+c", "esc"),
-			key.WithHelp("ctrl+c/esc", "cancel"),
-		),
-	}
+func TruncatePath(path string, maxLength int, prefixChars int, suffixChars int) string {
+	return common.TruncatePath(path, maxLength, prefixChars, suffixChars)
 }
 
 func RenderText(text string, style lipgloss.Style) string {
-	return style.Render(text)
+	return common.RenderText(text, style)
 }
