@@ -10,11 +10,12 @@ type GitService interface {
 	Status() ([]GitFile, error)
 	Stage(paths []string) error
 	Commit(commitType, message string) error
+	GetFileDiff(path string) (*DiffResult, error)
 }
 
 // DefaultGitService provides an implementation of GitService interface
 type DefaultGitService struct {
-	repo *GitRepository
+	repo GitRepositoryInterface
 }
 
 func NewGitService() (*DefaultGitService, error) {
@@ -63,6 +64,11 @@ func (s *DefaultGitService) Commit(commitType, message string) error {
 		return Commit(commitType, message)
 	}
 	return nil
+}
+
+// GetFileDiff is a convenience method on the service
+func (s *DefaultGitService) GetFileDiff(path string) (*DiffResult, error) {
+	return s.repo.GetFileDiff(path)
 }
 
 func findGitRepository(startPath string) (string, error) {

@@ -12,10 +12,6 @@ type GitFile struct {
 	Path   string
 }
 
-// NOTE: This file contains fallback implementations using native git commands.
-// These functions should ONLY be used when the go-git implementation fails.
-// All direct usage should go through the GitService interface.
-
 // GetStatus is a fallback implementation that uses the git command-line tool.
 // It parses the output of "git status --porcelain" to get the status of files in the repository.
 // This should only be used when the go-git implementation fails.
