@@ -79,10 +79,7 @@ func (m *Model) View() string {
 	)
 
 	// Create the vertical divider with exact height to match content
-	dividerHeight := m.DiffViewport.Height
-	if dividerHeight < 0 {
-		dividerHeight = 0
-	}
+	dividerHeight := max(m.DiffViewport.Height, 0)
 	verticalDivider := strings.Repeat("│\n", dividerHeight)
 	dividerView := m.StyleConfig.DividerStyle.Render(verticalDivider)
 
