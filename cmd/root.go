@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/LaansDole/go-git-tui/internal/ui/add"
+	"github.com/LaansDole/go-git-tui/internal/ui"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -38,7 +38,7 @@ User Manual:
   - TAB to select files
   - ENTER once you have done selecting the files you want to add`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := add.Run(); err != nil {
+			if err := ui.StartAddTUI(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
@@ -51,14 +51,15 @@ User Manual:
 		Long: `Create Git commits with an interactive TUI.
   
 User Manual:
-  - Follow the on-screen prompts to select a commit type and enter a commit message
-  - Use ARROW KEYS (UP/DOWN) to navigate options
-  - ENTER to confirm selections`,
+  - Use w/s keys to navigate commit types
+  - TAB to select a commit type and proceed to message input
+  - ENTER to confirm commit message
+  - ESC to go back to type selection`,
 		Run: func(cmd *cobra.Command, args []string) {
-			// Directly return a not-yet-implemented error without going through the UI package
-			// This avoids the need to load non-existent files
-			fmt.Fprintf(os.Stderr, "Error: commit UI not yet implemented\n")
-			os.Exit(1)
+			if err := ui.StartCommitTUI(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
 		},
 	}
 )
